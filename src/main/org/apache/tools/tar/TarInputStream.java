@@ -304,30 +304,7 @@ public class TarInputStream extends FilterInputStream {
         entrySize = currEntry.getSize();
 
         if (currEntry.isGNULongNameEntry()) {
-            // read in the name
-            ByteArrayOutputStream longName = new ByteArrayOutputStream();
-            int length = 0;
-            while ((length = read(SMALL_BUF)) >= 0) {
-                longName.write(SMALL_BUF, 0, length);
-            }
-            getNextEntry();
-            if (currEntry == null) {
-                // Bugzilla: 40334
-                // Malformed tar file - long entry name not followed by entry
-                return null;
-            }
-            byte[] longNameData = longName.toByteArray();
-            // remove trailing null terminator(s)
-            length = longNameData.length;
-            while (length > 0 && longNameData[length - 1] == 0) {
-                --length;
-            }
-            if (length != longNameData.length) {
-                byte[] l = new byte[length];
-                System.arraycopy(longNameData, 0, l, 0, length);
-                longNameData = l;
-            }
-            
+            byte[] longNameData = getLongNameData();
             currEntry.setName(encoding.decode(longNameData));
         }
 
@@ -345,6 +322,39 @@ public class TarInputStream extends FilterInputStream {
         // the correct value.
         entrySize = currEntry.getSize();
         return currEntry;
+    }
+
+    /**
+     * Get the next entry in this tar archive as longname data.
+     *
+     * @return The next entry in the archive as longname data, or null.
+     * @throws IOException on error
+     */
+    protected byte[] getLongNameData() throws IOException {
+        // read in the name
+        ByteArrayOutputStream longName = new ByteArrayOutputStream();
+        int length = 0;
+        while ((length = read(SMALL_BUF)) >= 0) {
+            longName.write(SMALL_BUF, 0, length);
+        }
+        getNextEntry();
+        if (currEntry == null) {
+            // Bugzilla: 40334
+            // Malformed tar file - long entry name not followed by entry
+            return null;
+        }
+        byte[] longNameData = longName.toByteArray();
+        // remove trailing null terminator(s)
+        length = longNameData.length;
+        while (length > 0 && longNameData[length - 1] == 0) {
+            --length;
+        }
+        if (length != longNameData.length) {
+            byte[] l = new byte[length];
+            System.arraycopy(longNameData, 0, l, 0, length);
+            longNameData = l;
+        }
+        return longNameData;
     }
 
     /**
