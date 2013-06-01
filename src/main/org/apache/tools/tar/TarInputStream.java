@@ -303,6 +303,11 @@ public class TarInputStream extends FilterInputStream {
         entryOffset = 0;
         entrySize = currEntry.getSize();
 
+        if (currEntry.isGNULongLinkEntry()) {
+            byte[] longLinkData = getLongNameData();
+            currEntry.setLinkName(encoding.decode(longLinkData));
+        }
+
         if (currEntry.isGNULongNameEntry()) {
             byte[] longNameData = getLongNameData();
             currEntry.setName(encoding.decode(longNameData));
